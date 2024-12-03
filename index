@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جستجوی اطلاعات مجله</title>
+    <style>
+        body {
+            font-family: 'B Nazanin', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+            text-align: center;
+        }
+        h1 {
+            font-family: 'B Titr', sans-serif;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        .toggle-button {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px; /* کاهش فاصله بین باکس‌های ورودی و دکمه toggle */
+            position: relative;
+            width: 100%;
+            height: 50px;
+            border-radius: 25px;
+            background-color: #eeeeee;
+            overflow: hidden;
+            border: 2px solid #555;
+        }
+        .toggle-button input {
+            display: none;
+        }
+        .toggle-button label {
+            cursor: pointer;
+            flex: 1;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s, color 0.3s;
+            color: black;
+            font-weight: normal;
+            border-radius: 25px;
+            padding: 10px;
+            background-color: transparent;
+            position: relative;
+            font-size: 16px;
+        }
+        .toggle-button input:checked + label {
+            background-color: #2e2e2e;
+            color: white;
+            font-weight: bold;
+        }
+        .input-group {
+            display: flex;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+            padding: 10px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        input[type="text"] {
+            font-family: Arial, sans-serif;
+            width: calc(50% - 10px);
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #555;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .full-width-input {
+            width: 100%;
+        }
+        button {
+            background-color: #2e2e2e;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: background-color 0.3s;
+            font-family: 'B Nazanin', sans-serif; /* تغییر فونت دکمه به B Nazanin */
+        }
+        button:hover {
+            background-color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            display: none;
+            position: relative;
+            z-index: 5;
+        }
+        th, td {
+            border: 1px solid #555;
+            padding: 6px;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        th {
+            font-family: 'B Titr', sans-serif;
+            background-color: #444;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            white-space: nowrap;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .loading {
+            display: none;
+            margin: 10px 0;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-left-color: #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+            text-align: right;
+            direction: rtl;
+            font-family: 'B Nazanin', sans-serif;
+        }
+        .error-message {
+            color: red;
+            font-family: 'B Titr', sans-serif;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>جستجوی اطلاعات مجله</h1>
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+        </div>
+
+        <div id="errorMessage" class="error-message" style="display: none;"></div> <!-- پیام خطا -->
+
+        <!-- کلید جستجو -->
+        <div class="toggle-button">
+            <input type="radio" id="searchByYear" name="searchType" value="year" checked onclick="toggleSearchType()">
+            <label for="searchByYear">جستجو بر اساس سال</label>
+            <input type="radio" id="searchByMagazine" name="searchType" value="magazine" onclick="toggleSearchType()">
+            <label for="searchByMagazine">جستجو بر اساس مجله (عنوان دقیق)</label>
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="year" placeholder="سال" inputmode="numeric" onkeypress="handleKeyPress(event)">
+            <input type="text" id="magazineName" class="full-width-input" placeholder="نام مجله" onkeypress="handleKeyPress(event)">
+        </div>
+        <button id="searchButton" onclick="search()">جستجو</button>
+        
+        <div class="table-container">
+            <table id="resultsTable">
+                <thead id="tableHeader">
+                    <tr>
+                        <th id="firstColumnHeader">ردیف</th> <!-- این ستون بر اساس نوع جستجو تغییر می‌کند -->
+                        <th>عنوان مجله</th>
+                        <th>دسته‌بندی‌ها</th>
+                        <th>ضریب تأثیر</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="footer">
+            اطلاعات این برنامه در تاریخ 1403.01.01 از وب سایت Scimago بارگذاری شده است. برای اطلاعات دقیق تر و به روزتر حتما از وب سایت اصلی استفاده نمائید. بدیهی است اگر تغییراتی در وب سایت اصلی بعد از تاریخ فوق الذکر پیش آمده باشد، در این برنامه پشتیبانی نمی‌شود. همچنین در نظر داشته باشید این برنامه صرفا جهت دسترسی راحت تر به اطلاعات طراحی شده است. لذا هیچگونه مسئولیتی در قبال مغایرت اطلاعات متوجه آن نخواهد بود و همواره توصیه می‌شود جهت اطمینان خاطر از منابع معتبر استفاده شود.
+        </div>
+    </div>
+
+    <script>
+        let rowIndex = 1; // متغیر برای نگهداری شماره ردیف
+        let isLoading = false; // متغیر برای مدیریت وضعیت بارگذاری
+
+        function toggleSearchType() {
+            const isMagazineSearch = document.getElementById('searchByMagazine').checked;
+            const yearInput = document.getElementById('year');
+            const magazineInput = document.getElementById('magazineName');
+
+            if (isMagazineSearch) {
+                yearInput.style.display = 'none';
+                magazineInput.style.width = '100%';
+            } else {
+                yearInput.style.display = 'block';
+                magazineInput.style.width = 'calc(50% - 10px)';
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                search();
+            }
+        }
+
+        function search() {
+            const magazineName = document.getElementById('magazineName').value;
+            const year = document.getElementById('year').value;
+            const loadingIndicator = document.getElementById('loading');
+            const searchButton = document.getElementById('searchButton');
+            const searchType = document.querySelector('input[name="searchType"]:checked').value;
+            const errorMessage = document.getElementById('errorMessage');
+
+            // Reset error message
+            errorMessage.style.display = 'none';
+            errorMessage.textContent = '';
+
+            // بررسی خالی بودن باکس سال
+            if (searchType === 'year' && year.trim() === '') {
+                errorMessage.textContent = 'لطفا سال را وارد کنید';
+                errorMessage.style.display = 'block';
+                return; // متوقف کردن تابع
+            }
+
+            if (isLoading) {
+                // اگر در حال بارگذاری هستیم، جستجو را متوقف کنیم
+                isLoading = false;
+                loadingIndicator.style.display = 'none';
+                searchButton.style.backgroundColor = '#2e2e2e'; // تغییر رنگ دکمه به حالت اولیه
+                searchButton.textContent = 'جستجو'; // تغییر متن دکمه به حالت اولیه
+                return; // متوقف کردن تابع
+            }
+
+            loadingIndicator.style.display = 'block';
+            searchButton.style.backgroundColor = 'red'; // تغییر رنگ دکمه به قرمز
+            searchButton.textContent = 'توقف جستجو'; // تغییر متن دکمه به توقف جستجو
+            isLoading = true; // وضعیت بارگذاری را فعال می‌کنیم
+
+            // Reset rowIndex for the next search
+            rowIndex = 1; 
+
+            google.script.run.withSuccessHandler(displayResults).searchData(magazineName, year, searchType);
+        }
+
+        function displayResults(results) {
+            const tableBody = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = ''; // پاک کردن نتایج قبلی
+
+            if (results.length === 0) {
+                const newRow = tableBody.insertRow();
+                const newCell = newRow.insertCell();
+                newCell.colSpan = 4; // تعداد ستون‌ها
+                newCell.textContent = 'نتیجه‌ای یافت نشد'; // پیام در صورت عدم وجود نتیجه
+            } else {
+                results.forEach(row => {
+                    const newRow = tableBody.insertRow();
+                    const rowIndexCell = newRow.insertCell(); // ایجاد سلول برای ردیف یا سال
+                    rowIndexCell.textContent = (document.getElementById('searchByMagazine').checked) ? row[0] : rowIndex++; // اگر جستجو بر اساس مجله باشد، سال را نمایش می‌دهیم، در غیر این صورت شماره ردیف
+                    row.slice(1).forEach(cellData => {
+                        const newCell = newRow.insertCell();
+                        newCell.textContent = cellData;
+                    });
+                });
+            }
+
+            // نمایش جدول پس از اولین جستجو
+            document.getElementById('resultsTable').style.display = 'table';
+            document.getElementById('loading').style.display = 'none'; // پنهان کردن آیکون بارگذاری
+            document.getElementById('searchButton').style.backgroundColor = '#2e2e2e'; // تغییر رنگ دکمه به حالت اولیه
+            document.getElementById('searchButton').textContent = 'جستجو'; // تغییر متن دکمه به حالت اولیه
+            isLoading = false; // وضعیت بارگذاری را غیرفعال می‌کنیم
+        }
+
+        // در ابتدا باکس ورودی سال را مخفی کنیم
+        toggleSearchType();
+    </script>
+</body>
+</html>
