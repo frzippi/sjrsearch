@@ -2,7 +2,7 @@ let isLoading = false; // متغیر برای مدیریت وضعیت بارگذ
 
 
 function doGet() {
-    return HtmlService.createHtmlOutputFromFile('Index')
+    return HtmlService.createHtmlOutputFromFile('index')
         .setTitle('SJR Search');
 }
 
